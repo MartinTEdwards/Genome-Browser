@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Genome {
+  id          Int              @id @default(autoincrement())
+  accession   String           @unique
+  organism    String
+  totalGenes  Int
+  genes       GeneAnnotation[]
+}
+
+model GeneAnnotation {
+  id               Int    @id @default(autoincrement())
+  genomeId         Int
+  proteinAccession   String
+  geneName           String
+  sequenceAccession  String   @default("")
+  moleculeType       String   @default("Unknown")
+  strand             String
+  startCoord         Int
+  stopCoord          Int
+  intergenicDistance Int?
+  directonId         Int      @default(1)
+  boundaryType       String?
+  cogId              String?
+  cogCategory        String?
+
+  genome Genome @relation(fields: [genomeId], references: [id])
+}

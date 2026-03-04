@@ -1,0 +1,35 @@
+{
+  "name": "genome-explorer",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "e2e": "start-server-and-test dev http://localhost:3000 cypress:open",
+    "e2e:headless": "start-server-and-test dev http://localhost:3000 \"cypress run\""
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "lucide-react": "^0.575.0",
+    "next": "16.1.6",
+    "prisma": "^5.22.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "cypress": "^15.11.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "start-server-and-test": "^2.1.5",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
