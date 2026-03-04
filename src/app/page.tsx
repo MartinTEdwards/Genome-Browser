@@ -59,6 +59,7 @@ export default function HomePage() {
   const [moleculeFilter, setMoleculeFilter] = useState<'Chromosome' | 'Plasmid' | 'Both'>('Chromosome')
   const [page, setPage] = useState(1)
   const [error, setError] = useState('')
+  const [loadedAccessions, setLoadedAccessions] = useState<Set<string>>(new Set())
 
   // Fetch genome list
   useEffect(() => {
@@ -68,6 +69,14 @@ export default function HomePage() {
       .then((d) => setGenomes(d.genomes ?? []))
       .catch(() => setError('Failed to load genome list from NCBI.'))
       .finally(() => setLoadingGenomes(false))
+  }, [])
+
+  // Fetch list of loaded accessions (genomes already in DB)
+  useEffect(() => {
+    fetch('/api/genomes/loaded')
+      .then((r) => r.json())
+      .then((d) => setLoadedAccessions(new Set(d.loadedAccessions ?? [])))
+      .catch(() => {})
   }, [])
 
   // Debounce search
@@ -130,6 +139,7 @@ export default function HomePage() {
         const err = await res.json()
         throw new Error(err.error)
       }
+      setLoadedAccessions((prev) => new Set(prev).add(selectedAccession))
       await fetchAnnotations()
     } catch (e) {
       setError(`Load failed: ${e instanceof Error ? e.message : 'Unknown error'}`)
@@ -175,7 +185,12 @@ export default function HomePage() {
               >
                 <option value="">— Select an organism —</option>
                 {genomes.map((g) => (
-                  <option key={g.accession} value={g.accession}>
+                  <option
+                    key={g.accession}
+                    value={g.accession}
+                    className={loadedAccessions.has(g.accession) ? 'italic' : ''}
+                    style={loadedAccessions.has(g.accession) ? { fontStyle: 'italic' } : undefined}
+                  >
                     {g.organismName}{g.strain ? ` (${g.strain})` : ''} — {g.accession}
                   </option>
                 ))}
@@ -190,6 +205,8 @@ export default function HomePage() {
             >
               {loadingData ? (
                 <><Loader2 className="w-4 h-4 animate-spin" />Loading…</>
+              ) : loadedAccessions.has(selectedAccession) ? (
+                <><RefreshCw className="w-4 h-4" />Re-load Genome</>
               ) : (
                 <><Database className="w-4 h-4" />Load Genome</>
               )}

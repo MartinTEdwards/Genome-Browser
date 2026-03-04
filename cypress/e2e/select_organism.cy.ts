@@ -1,5 +1,5 @@
 describe('Organism selection', () => {
-  it('passes', () => {
+  it('can load genome and display annotations', () => {
     cy.visit('/')
     cy.contains('Select Genome').should('be.visible')
     cy.get('select').select('GCF_000195955.2')
@@ -16,11 +16,10 @@ describe('Organism selection', () => {
     cy.contains('Protein Accession').should('be.visible')
     cy.contains('Gene Name').should('be.visible')
     cy.contains('Strand').should('be.visible')
-    cy.contains('Directon').should('be.visible')
     cy.contains('COG').should('be.visible')
     cy.contains('Start').should('be.visible')
     cy.contains('Stop').should('be.visible')
-    cy.contains('Directons').should('be.visible')
-    cy.contains('Intergenic Distances').should('be.visible')
+    cy.contains('Directon').should('be.visible')
+    cy.contains('Intergenic Dist.').should('be.visible')
   })
 })
