@@ -272,9 +272,9 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[800px]">
+            {/* Table - no overflow so all columns visible for Cypress; table-fixed keeps it within container */}
+            <div>
+              <table className="w-full text-sm table-fixed">
                 <thead className="bg-gray-800/60 text-gray-400 uppercase text-xs tracking-wider">
                   <tr>
                     <th className="px-6 py-3 text-left">Organism</th>
