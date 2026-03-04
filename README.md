@@ -56,3 +56,5 @@ A prokaryotic genome annotation browser powered by the NCBI Datasets API. Browse
 - [Prisma](https://www.prisma.io) + SQLite
 - [Tailwind CSS](https://tailwindcss.com) 4
 - [NCBI Datasets API](https://www.ncbi.nlm.nih.gov/datasets/), [COG API](https://www.ncbi.nlm.nih.gov/research/cog/)
+# Genome-Browser
+A simple prokaryotic genome browser focusing on Inter Genic Distance and strand transition
