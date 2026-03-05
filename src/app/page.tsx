@@ -60,6 +60,7 @@ export default function HomePage() {
   const [page, setPage] = useState(1)
   const [error, setError] = useState('')
   const [loadedAccessions, setLoadedAccessions] = useState<Set<string>>(new Set())
+  const [activeTab, setActiveTab] = useState<'browser' | 'directon-analysis'>('browser')
 
   // Fetch genome list
   useEffect(() => {
@@ -166,8 +167,33 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+      {/* Tabs */}
+      <div className="border-b border-gray-800 bg-gray-900/50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex gap-1">
+            <button
+              onClick={() => setActiveTab('browser')}
+              className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${activeTab === 'browser'
+                ? 'border-emerald-500 text-emerald-400'
+                : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+            >
+              Browser
+            </button>
+            <button
+              onClick={() => setActiveTab('directon-analysis')}
+              className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${activeTab === 'directon-analysis'
+                ? 'border-emerald-500 text-emerald-400'
+                : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+            >
+              Directon Analysis
+            </button>
+          </div>
+        </div>
+      </div>
 
+      <main className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+        {activeTab === 'browser' && (
+          <>
         {/* Genome selector panel */}
         <section className="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-4">
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest">Select Genome</h2>
@@ -409,6 +435,13 @@ export default function HomePage() {
                 </div>
               </div>
             )}
+          </section>
+        )}
+          </>
+        )}
+        {activeTab === 'directon-analysis' && (
+          <section className="bg-gray-900 rounded-2xl border border-gray-800 p-12 text-center text-gray-500">
+            <p className="text-sm">Directon Analysis — Coming soon</p>
           </section>
         )}
       </main>
