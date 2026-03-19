@@ -2,6 +2,18 @@
 
 A prokaryotic genome annotation browser powered by the NCBI Datasets API. Browse reference genomes, load annotations (genes, COG categories, directons), and filter by molecule type or search terms.
 
+Independent Development & Intellectual Property Declaration
+The software, code, algorithms, and all related documentation contained within this repository are the sole and exclusive intellectual property of Martin T. Edwards.
+
+Declaration of Independent Creation:
+This project was independently conceived, developed, and reduced to practice entirely outside the scope of any third-party employment, independent contractor agreements, or platform service agreements.
+
+Resource Isolation:
+Absolutely no proprietary information, confidential data, hardware, facilities, or financial resources from any current or former client, employer, or third-party service platform were utilized in the creation of this work.
+
+Scope Separation:
+The subject matter of this repository does not relate to, arise out of, or connect with any third-party services or task-based platform work provided by the author. All commit timestamps and version control histories contained herein serve as an immutable, chronological record of independent development.
+
 ## Features
 
 - **Genome selection** — Pick from reference prokaryotic genomes (NCBI taxon 2)

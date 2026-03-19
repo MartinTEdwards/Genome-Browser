@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Search, Database, ChevronLeft, ChevronRight, Dna, Loader2, RefreshCw } from 'lucide-react'
+import { DirectonAnalysisTab } from '@/components/DirectonAnalysisTab'
 
 const COG_CATEGORIES: Record<string, string> = {
   J: 'Translation', A: 'RNA processing', K: 'Transcription', L: 'Replication/repair',
@@ -440,9 +441,11 @@ export default function HomePage() {
           </>
         )}
         {activeTab === 'directon-analysis' && (
-          <section className="bg-gray-900 rounded-2xl border border-gray-800 p-12 text-center text-gray-500">
-            <p className="text-sm">Directon Analysis — Coming soon</p>
-          </section>
+          <DirectonAnalysisTab
+            genomes={genomes}
+            loadedAccessions={loadedAccessions}
+            onCorpusLoaded={(accession) => setLoadedAccessions((prev) => new Set(prev).add(accession))}
+          />
         )}
       </main>
     </div>
