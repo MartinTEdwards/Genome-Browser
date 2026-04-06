@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -10,7 +11,8 @@
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
     "e2e": "start-server-and-test dev http://localhost:3000 cypress:open",
-    "e2e:headless": "start-server-and-test dev http://localhost:3000 \"cypress run\""
+    "e2e:headless": "start-server-and-test dev http://localhost:3000 \"cypress run\"",
+    "download-refseq": "node scripts/download-refseq-bacteria-packages.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

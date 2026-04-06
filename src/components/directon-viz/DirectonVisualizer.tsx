@@ -29,6 +29,8 @@ export interface GenomeDirecton {
   genomeAccession: string
   organism: string
   genes: Set<string>
+  /** One row per directon; disambiguates same assembly on multiple replicons / regions */
+  directonLabel: string
 }
 
 interface DirectonVisualizerProps {

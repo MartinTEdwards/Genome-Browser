@@ -5,7 +5,7 @@ describe('Organism selection', () => {
     cy.get('select').select('GCF_000195955.2')
     cy.contains('GCF_000195955.2').should('be.visible')
     cy.contains('Load Genome').should('be.enabled') 
-    cy.intercept('GET', '/api/annotations?accession=GCF_000195955.2&search=&page=1&moleculeType=Chromosome').as('loadRequest');
+    cy.intercept('GET', '/api/annotations?accession=GCF_000195955.2&search=&page=1').as('loadRequest');
     cy.wait('@loadRequest').then((interception) => {
       expect(interception?.response?.statusCode).to.eq(200)   
     })
@@ -17,6 +17,7 @@ describe('Organism selection', () => {
     cy.contains('Gene Name').should('be.visible')
     cy.contains('Strand').should('be.visible')
     cy.contains('COG').should('be.visible')
+    cy.contains('GO').should('be.visible')
     cy.contains('Start').should('be.visible')
     cy.contains('Stop').should('be.visible')
     cy.contains('Directon').should('be.visible')

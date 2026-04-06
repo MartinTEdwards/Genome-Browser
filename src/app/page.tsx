@@ -36,6 +36,21 @@ interface Annotation {
   boundaryType: string | null
   cogId: string | null
   cogCategory: string | null
+  goTerms: string
+}
+
+function formatGoCell(goTermsJson: string): { label: string; title: string } {
+  if (!goTermsJson || goTermsJson === '[]') return { label: '—', title: '' }
+  try {
+    const arr = JSON.parse(goTermsJson) as unknown
+    if (!Array.isArray(arr) || arr.length === 0) return { label: '—', title: '' }
+    const ids = arr.filter((x): x is string => typeof x === 'string')
+    const full = ids.join(', ')
+    if (ids.length <= 2) return { label: full, title: full }
+    return { label: `${ids.slice(0, 2).join(', ')} +${ids.length - 2}`, title: full }
+  } catch {
+    return { label: '—', title: '' }
+  }
 }
 
 interface AnnotationsResponse {
@@ -57,7 +72,6 @@ export default function HomePage() {
   const [annotationsData, setAnnotationsData] = useState<AnnotationsResponse | null>(null)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [moleculeFilter, setMoleculeFilter] = useState<'Chromosome' | 'Plasmid' | 'Both'>('Chromosome')
   const [page, setPage] = useState(1)
   const [error, setError] = useState('')
   const [loadedAccessions, setLoadedAccessions] = useState<Set<string>>(new Set())
@@ -97,7 +111,6 @@ export default function HomePage() {
         accession: selectedAccession,
         search: debouncedSearch,
         page: String(page),
-        ...(moleculeFilter !== 'Both' ? { moleculeType: moleculeFilter } : {}),
       })
       const res = await fetch(`/api/annotations?${params}`)
       if (res.status === 404) {
@@ -111,7 +124,7 @@ export default function HomePage() {
     } finally {
       setLoadingAnnotations(false)
     }
-  }, [selectedAccession, debouncedSearch, page, moleculeFilter])
+  }, [selectedAccession, debouncedSearch, page])
 
   useEffect(() => {
     fetchAnnotations()
@@ -124,7 +137,6 @@ export default function HomePage() {
     setAnnotationsData(null)
     setPage(1)
     setSearch('')
-    setMoleculeFilter('Chromosome')
   }
 
   const handleLoadGenome = async () => {
@@ -273,26 +285,6 @@ export default function HomePage() {
           <section className="bg-gray-900 rounded-2xl border border-gray-800">
             {/* Filter + Search bar */}
             <div className="px-6 py-4 border-b border-gray-800 space-y-3">
-              {/* Molecule type pill filter */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-gray-500 mr-1">Show:</span>
-                {(['Chromosome', 'Both', 'Plasmid'] as const).map((opt) => (
-                  <button
-                    key={opt}
-                    onClick={() => { setMoleculeFilter(opt); setPage(1) }}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${moleculeFilter === opt
-                      ? opt === 'Chromosome'
-                        ? 'bg-cyan-500/30 text-cyan-300 ring-1 ring-cyan-500/50'
-                        : opt === 'Plasmid'
-                          ? 'bg-amber-500/30 text-amber-300 ring-1 ring-amber-500/50'
-                          : 'bg-gray-600/50 text-gray-200 ring-1 ring-gray-500/50'
-                      : 'bg-gray-800 text-gray-500 hover:text-gray-300 hover:bg-gray-700'
-                      }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
               {/* Search */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="relative flex-1">
@@ -328,6 +320,7 @@ export default function HomePage() {
                     <th className="px-6 py-3 text-center">Strand</th>
                     <th className="px-6 py-3 text-center">Directon</th>
                     <th className="px-6 py-3 text-left">COG</th>
+                    <th className="px-6 py-3 text-left">GO</th>
                     <th className="px-6 py-3 text-right">Start</th>
                     <th className="px-6 py-3 text-right">Stop</th>
                     <th className="px-6 py-3 text-right">Intergenic Dist.</th>
@@ -336,13 +329,13 @@ export default function HomePage() {
                 <tbody className="divide-y divide-gray-800">
                   {loadingAnnotations ? (
                     <tr>
-                      <td colSpan={10} className="px-6 py-12 text-center text-gray-500">
+                      <td colSpan={11} className="px-6 py-12 text-center text-gray-500">
                         <Loader2 className="w-6 h-6 animate-spin mx-auto" />
                       </td>
                     </tr>
                   ) : annotationsData?.annotations.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="px-6 py-12 text-center text-gray-500">No results found.</td>
+                      <td colSpan={11} className="px-6 py-12 text-center text-gray-500">No results found.</td>
                     </tr>
                   ) : (
                     annotationsData?.annotations.map((a) => (
@@ -351,13 +344,8 @@ export default function HomePage() {
                           {annotationsData.organism}
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${a.moleculeType === 'Chromosome'
-                            ? 'bg-cyan-500/15 text-cyan-400 ring-1 ring-cyan-500/30'
-                            : a.moleculeType === 'Plasmid'
-                              ? 'bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30'
-                              : 'bg-gray-500/15 text-gray-400 ring-1 ring-gray-500/30'
-                            }`}>
-                            {a.moleculeType}
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-500/15 text-cyan-400 ring-1 ring-cyan-500/30">
+                            {a.moleculeType === 'Chromosome' ? 'Chromosome' : a.moleculeType}
                           </span>
                         </td>
                         <td className="px-6 py-3 font-mono text-emerald-400 text-xs">{a.proteinAccession || '—'}</td>
@@ -397,6 +385,9 @@ export default function HomePage() {
                           ) : (
                             <span className="text-gray-700 text-xs">—</span>
                           )}
+                        </td>
+                        <td className="px-4 py-3 text-xs font-mono text-gray-300 max-w-[140px] truncate" title={formatGoCell(a.goTerms ?? '[]').title}>
+                          {formatGoCell(a.goTerms ?? '[]').label}
                         </td>
                         <td className="px-6 py-3 text-right font-mono text-gray-300 text-xs">{a.startCoord.toLocaleString()}</td>
                         <td className="px-6 py-3 text-right font-mono text-gray-300 text-xs">{a.stopCoord.toLocaleString()}</td>

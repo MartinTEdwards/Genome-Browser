@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
                 OR: [
                     { geneName: { contains: search } },
                     { proteinAccession: { contains: search } },
+                    { goTerms: { contains: search } },
                 ],
             }
             : {}),

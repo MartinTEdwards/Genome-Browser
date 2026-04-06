@@ -213,6 +213,7 @@ export function DirectonAnalysisTab({
               genomeAccession: d.genomeAccession,
               organism: g.organism,
               genes: d.genes,
+              directonLabel: `${d.moleculeType} D${d.directonId}`,
             })
             directonIdToTarget.set(d.id, { genomeAccession: d.genomeAccession, organism: g.organism })
             const r = results.get(d.id)

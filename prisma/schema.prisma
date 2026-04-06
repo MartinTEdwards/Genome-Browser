@@ -30,6 +30,7 @@ model GeneAnnotation {
   boundaryType       String?
   cogId              String?
   cogCategory        String?
+  goTerms            String   @default("")
 
   genome Genome @relation(fields: [genomeId], references: [id])
 }

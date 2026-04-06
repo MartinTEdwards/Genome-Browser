@@ -2,7 +2,12 @@
 
 interface EvidenceHeatmapProps {
   selectedCogs: string[]
-  genomeDirectons: Array<{ genomeAccession: string; organism: string; genes: Set<string> }>
+  genomeDirectons: Array<{
+    genomeAccession: string
+    organism: string
+    genes: Set<string>
+    directonLabel: string
+  }>
   freqMap: Map<string, number>
 }
 
@@ -23,14 +28,14 @@ export function EvidenceHeatmap({
   return (
     <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-4">
       <h4 className="text-xs font-semibold text-gray-400 uppercase mb-3">
-        Evidence — genomes sharing this sentence
+        Evidence — directons sharing this sentence
       </h4>
       <div className="overflow-x-auto">
         <table className="w-full text-xs border-collapse">
           <thead>
             <tr>
               <th className="text-left py-2 pr-4 text-gray-500 font-medium sticky left-0 bg-gray-800/90">
-                Genome
+                Assembly / directon
               </th>
               {selectedCogs.map((cog) => {
                 const freq = freqMap.get(cog) ?? 0.0001
@@ -50,9 +55,14 @@ export function EvidenceHeatmap({
           </thead>
           <tbody>
             {rows.slice(0, 30).map((row, ri) => (
-              <tr key={ri} className="border-t border-gray-700/50">
-                <td className="py-1.5 pr-4 text-gray-400 truncate max-w-[180px] sticky left-0 bg-gray-800/90">
-                  {row.genomeAccession}
+              <tr key={`${row.directonLabel}-${ri}`} className="border-t border-gray-700/50">
+                <td
+                  className="py-1.5 pr-4 text-gray-400 truncate max-w-[240px] sticky left-0 bg-gray-800/90"
+                  title={`${row.genomeAccession} — ${row.directonLabel}`}
+                >
+                  <span className="text-gray-300">{row.genomeAccession}</span>
+                  <span className="text-gray-600"> · </span>
+                  <span className="text-gray-500">{row.directonLabel}</span>
                 </td>
                 {selectedCogs.map((cog) => {
                   const has = row.genes.has(cog)
@@ -80,7 +90,7 @@ export function EvidenceHeatmap({
         </table>
         {rows.length > 30 && (
           <div className="text-xs text-gray-500 mt-2">
-            … and {rows.length - 30} more genomes
+            … and {rows.length - 30} more directons
           </div>
         )}
       </div>

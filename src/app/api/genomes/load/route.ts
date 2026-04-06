@@ -32,6 +32,7 @@ interface AnnotatedGene extends RawGene {
     boundaryType: string | null
     cogId: string | null
     cogCategory: string | null
+    goTerms: string
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -69,10 +70,17 @@ async function fetchCogMap(
         try {
             const res = await fetch(url, { headers: { Accept: 'application/json' } })
             if (!res.ok) break
-            const data = await res.json()
+            const data = (await res.json()) as {
+                results?: Array<{
+                    protein?: { name?: string }
+                    cog?: { cogid?: string; funcats?: Array<{ name?: string }> }
+                    bitscore?: number
+                }>
+                next?: string
+            }
             for (const hit of data.results ?? []) {
-                const protein: string = hit.protein?.name
-                const cogId: string = hit.cog?.cogid
+                const protein: string = hit.protein?.name ?? ''
+                const cogId: string = hit.cog?.cogid ?? ''
                 const bitscore: number = hit.bitscore ?? 0
                 const funccat: string = hit.cog?.funcats?.[0]?.name ?? ''
                 if (!protein || !cogId) continue
@@ -84,7 +92,7 @@ async function fetchCogMap(
             // Follow pagination using the "next" URL; but strip the internal hostname
             // that NCBI occasionally puts in the next field and replace with the public one.
             if (data.next) {
-                const nextPath = data.next.replace(/^https?:\/\/[^/]+/, '')
+                const nextPath: string = data.next.replace(/^https?:\/\/[^/]+/, '')
                 url = `https://www.ncbi.nlm.nih.gov${nextPath}`
             } else {
                 url = null
@@ -97,12 +105,115 @@ async function fetchCogMap(
     )
 }
 
+/** Collect unique GO IDs from NCBI gene_ontology / geneOntology blocks. */
+function extractGoIdsFromGene(gene: unknown): string[] {
+    const terms = new Set<string>()
+    const g = gene as Record<string, unknown> | null
+    if (!g || typeof g !== 'object') return []
+    const go = (g.gene_ontology ?? g.geneOntology) as Record<string, unknown> | undefined
+    if (!go || typeof go !== 'object') return []
+    const keys = [
+        'molecular_functions',
+        'molecularFunctions',
+        'biological_processes',
+        'biologicalProcesses',
+        'cellular_components',
+        'cellularComponents',
+    ] as const
+    for (const key of keys) {
+        const list = go[key] as Array<{ go_id?: string; goId?: string }> | undefined
+        for (const item of list ?? []) {
+            const id = item?.go_id ?? item?.goId
+            if (id) terms.add(id)
+        }
+    }
+    return [...terms].sort()
+}
+
+/** Report keys that map a bulk gene response row back to protein accessions. */
+function reportAccessionsForGoMap(report: Record<string, unknown>): string[] {
+    const keys: string[] = []
+    const q = report.query
+    if (Array.isArray(q)) {
+        for (const x of q) {
+            if (typeof x === 'string') keys.push(x)
+            else if (x && typeof x === 'object' && 'accession_version' in x) {
+                const av = (x as { accession_version?: string }).accession_version
+                if (av) keys.push(av)
+            }
+        }
+    } else if (typeof q === 'string') {
+        keys.push(q)
+    }
+    if (keys.length === 0 && report.gene && typeof report.gene === 'object') {
+        const proteins = (report.gene as { proteins?: Array<{ accession_version?: string }> }).proteins
+        for (const p of proteins ?? []) {
+            if (p.accession_version) keys.push(p.accession_version)
+        }
+    }
+    return keys
+}
+
+/**
+ * Fetch GO term IDs per protein accession from NCBI Datasets gene-by-accession API.
+ * Batches requests to limit URL length; failures are best-effort (empty map entries).
+ */
+async function fetchGoMap(proteinAccessions: string[]): Promise<Record<string, string[]>> {
+    const merged = new Map<string, Set<string>>()
+    const unique = [...new Set(proteinAccessions.filter(Boolean))]
+    const batchSize = 45
+
+    for (let i = 0; i < unique.length; i += batchSize) {
+        const batch = unique.slice(i, i + batchSize)
+        const pathSegment = batch.map((id) => encodeURIComponent(id)).join(',')
+        try {
+            const res = await fetch(`${NCBI_BASE}/gene/accession/${pathSegment}`, {
+                headers: { Accept: 'application/json' },
+            })
+            if (!res.ok) continue
+            const data = (await res.json()) as { reports?: Array<Record<string, unknown>> }
+            for (const report of data.reports ?? []) {
+                const ids = extractGoIdsFromGene(report.gene)
+                if (ids.length === 0) continue
+                for (const acc of reportAccessionsForGoMap(report)) {
+                    let set = merged.get(acc)
+                    if (!set) {
+                        set = new Set<string>()
+                        merged.set(acc, set)
+                    }
+                    for (const id of ids) set.add(id)
+                }
+            }
+        } catch {
+            /* best-effort */
+        }
+        await new Promise((r) => setTimeout(r, 80))
+    }
+
+    return Object.fromEntries(
+        [...merged.entries()].map(([acc, set]) => [acc, [...set].sort()])
+    )
+}
+
+function attachGoTerms(
+    genes: Omit<AnnotatedGene, 'goTerms'>[],
+    goMap: Record<string, string[]>
+): AnnotatedGene[] {
+    return genes.map((g) => ({
+        ...g,
+        goTerms: JSON.stringify(goMap[g.proteinAccession] ?? []),
+    }))
+}
+
 /**
  * Single-pass annotation: assign directon IDs, boundary types, and intergenic
  * distances. Sorted by startCoord within each molecule type.
  * Convergent = +→−  |  Divergent = −→+
  */
-function annotateGenes(genes: RawGene[], cogMap: Record<string, { cogId: string; cogCategory: string }>): AnnotatedGene[] {
+function annotateGenes(
+    genes: RawGene[],
+    cogMap: Record<string, { cogId: string; cogCategory: string }>
+): Omit<AnnotatedGene, 'goTerms'>[] {
     const byMolecule: Record<string, RawGene[]> = {}
     for (const g of genes) {
         if (!byMolecule[g.moleculeType]) byMolecule[g.moleculeType] = []
@@ -110,7 +221,7 @@ function annotateGenes(genes: RawGene[], cogMap: Record<string, { cogId: string;
     }
 
     const molOrder = (m: string) => (m === 'Chromosome' ? 0 : m === 'Plasmid' ? 1 : 2)
-    const result: AnnotatedGene[] = []
+    const result: Omit<AnnotatedGene, 'goTerms'>[] = []
 
     for (const mol of Object.keys(byMolecule).sort((a, b) => molOrder(a) - molOrder(b))) {
         const sorted = byMolecule[mol].slice().sort((a, b) => a.startCoord - b.startCoord)
@@ -181,11 +292,14 @@ export async function POST(req: NextRequest) {
                 const range = region?.gene_range?.range?.[0]
                 const seqAcc = region?.gene_range?.accession_version ?? ''
 
+                const moleculeType = moleculeTypeMap[seqAcc] ?? 'Unknown'
+                if (moleculeType === 'Plasmid') continue
+
                 rawGenes.push({
                     proteinAccession: protein?.accession_version ?? g.locus_tag ?? '',
                     geneName: g.symbol ?? g.name ?? g.locus_tag ?? '',
                     sequenceAccession: seqAcc,
-                    moleculeType: moleculeTypeMap[seqAcc] ?? 'Unknown',
+                    moleculeType,
                     strand: range?.orientation === 'minus' ? '-' : '+',
                     startCoord: range?.begin ? parseInt(range.begin, 10) : 0,
                     stopCoord: range?.end ? parseInt(range.end, 10) : 0,
@@ -194,7 +308,8 @@ export async function POST(req: NextRequest) {
             pageToken = data.next_page_token
         } while (pageToken && pageNum < 50)
 
-        const genes = annotateGenes(rawGenes, cogMap)
+        const goMap = await fetchGoMap(rawGenes.map((g) => g.proteinAccession))
+        const genes = attachGoTerms(annotateGenes(rawGenes, cogMap), goMap)
 
         const genome = await prisma.genome.upsert({
             where: { accession },

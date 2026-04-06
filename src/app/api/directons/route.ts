@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
   try {
     const annotations = await prisma.geneAnnotation.findMany({
+      where: { moleculeType: { not: 'Plasmid' } },
       select: {
         genomeId: true,
         sequenceAccession: true,
