@@ -11,7 +11,7 @@ export async function GET() {
         moleculeType: true,
         strand: true,
         directonId: true,
-        cogId: true,
+        ecNumber: true,
       },
     })
 
@@ -32,7 +32,7 @@ export async function GET() {
 
     const directonMap = new Map<
       string,
-      { genomeId: string; genomeAccession: string; organism: string; moleculeType: string; strand: string; directonId: number; cogs: Set<string> }
+      { genomeId: string; genomeAccession: string; organism: string; moleculeType: string; strand: string; directonId: number; ecs: Set<string> }
     >()
 
     for (const a of annotations) {
@@ -53,11 +53,12 @@ export async function GET() {
           moleculeType: a.moleculeType,
           strand: a.strand === '-' ? '-' : '+',
           directonId: a.directonId,
-          cogs: new Set(),
+          ecs: new Set(),
         }
         directonMap.set(key, entry)
       }
-      if (a.cogId) entry.cogs.add(a.cogId)
+      // Phase 2: aggregate EC numbers instead of COG IDs
+      if (a.ecNumber) entry.ecs.add(a.ecNumber)
     }
 
     const genomeList: Array<{
@@ -85,8 +86,8 @@ export async function GET() {
         moleculeType: entry.moleculeType,
         strand: entry.strand as '+' | '-',
         directonId: entry.directonId,
-        genes: Array.from(entry.cogs),
-        size: entry.cogs.size,
+        genes: Array.from(entry.ecs),
+        size: entry.ecs.size,
       }
       const list = byGenome.get(entry.genomeId) ?? []
       list.push(directon)

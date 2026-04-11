@@ -12,8 +12,8 @@ interface DirectonTrackProps {
   moleculeType: string
   genes: string[]
   partitions: SentencePartition[]
-  selectedCogs: Set<string> | null
-  onSentenceClick: (cogs: string[]) => void
+  selectedECs: Set<string> | null
+  onSentenceClick: (ecs: string[]) => void
   width?: number
   blockHeight?: number
 }
@@ -24,7 +24,7 @@ export function DirectonTrack({
   moleculeType,
   genes,
   partitions,
-  selectedCogs,
+  selectedECs,
   onSentenceClick,
   width = 800,
   blockHeight = 28,
@@ -39,7 +39,7 @@ export function DirectonTrack({
   const geneToIndex = new Map<string, number>()
   genes.forEach((g, i) => geneToIndex.set(g, i))
 
-  const isGeneInSelected = (cog: string) => selectedCogs?.has(cog) ?? false
+  const isGeneInSelected = (ec: string) => selectedECs?.has(ec) ?? false
 
   return (
     <div className="rounded-lg border border-gray-700 bg-gray-800/50 p-4">
@@ -91,14 +91,14 @@ export function DirectonTrack({
           opacity={0.6}
         />
 
-        {/* Gene blocks */}
-        {genes.map((cog, i) => {
+        {/* Gene blocks (EC tokens) */}
+        {genes.map((ec, i) => {
           const x = 20 + i * (blockWidth + 4)
-          const inPartition = partitions.some((p) => p.genes.has(cog))
-          const selected = isGeneInSelected(cog)
+          const inPartition = partitions.some((p) => p.genes.has(ec))
+          const selected = isGeneInSelected(ec)
 
           return (
-            <g key={`${cog}-${i}`}>
+            <g key={`${ec}-${i}`}>
               <rect
                 x={x}
                 y={backboneY - blockHeight - 4}
@@ -118,7 +118,7 @@ export function DirectonTrack({
                 dominantBaseline="central"
                 className="fill-gray-300 text-[10px] font-mono"
               >
-                {cog.length > 8 ? cog.slice(0, 6) + '..' : cog}
+                {ec.length > 8 ? ec.slice(0, 6) + '..' : ec}
               </text>
             </g>
           )

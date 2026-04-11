@@ -9,7 +9,7 @@ export interface ComparisonMatch {
   sourceId: string
   targetId: string
   overlapCount: number
-  sharedCogs: string[]
+  sharedECs: string[]
   pValue: number
 }
 
@@ -47,7 +47,7 @@ export function DirectonVisualizer({
   width = 800,
 }: DirectonVisualizerProps) {
   const [selectedSentence, setSelectedSentence] = useState<{
-    cogs: string[]
+    ecs: string[]
     sourceDirectonId: string
   } | null>(null)
   const evidencePanelRef = useRef<HTMLDivElement>(null)
@@ -57,28 +57,27 @@ export function DirectonVisualizer({
     let totalDirectons = 0
     for (const gd of allGenomeDirectons) {
       totalDirectons++
-      for (const cog of gd.genes) {
-        map.set(cog, (map.get(cog) ?? 0) + 1)
+      for (const ec of gd.genes) {
+        map.set(ec, (map.get(ec) ?? 0) + 1)
       }
     }
     const freqMapOut = new Map<string, number>()
-    for (const [cog, count] of map) {
-      freqMapOut.set(cog, count / totalDirectons)
+    for (const [ec, count] of map) {
+      freqMapOut.set(ec, count / totalDirectons)
     }
     return freqMapOut
   }, [allGenomeDirectons])
 
-  const handleSentenceClick = (cogs: string[], sourceDirectonId: string) => {
-    setSelectedSentence({ cogs, sourceDirectonId })
+  const handleSentenceClick = (ecs: string[], sourceDirectonId: string) => {
+    setSelectedSentence({ ecs, sourceDirectonId })
     evidencePanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   const supportingMatches = useMemo(() => {
     if (!selectedSentence) return []
-    const cogSet = new Set(selectedSentence.cogs)
     const directon = directons.find((d) => d.id === selectedSentence.sourceDirectonId)
     const matches = directon?.matches ?? []
-    return matches.filter((m) => selectedSentence.cogs.every((c) => m.sharedCogs.includes(c)))
+    return matches.filter((m) => selectedSentence.ecs.every((c) => m.sharedECs.includes(c)))
   }, [selectedSentence, directons])
 
   return (
@@ -92,18 +91,18 @@ export function DirectonVisualizer({
             moleculeType={d.moleculeType}
             genes={d.genes}
             partitions={d.partitions.map((p) => ({ genes: p }))}
-            selectedCogs={selectedSentence ? new Set(selectedSentence.cogs) : null}
-            onSentenceClick={(cogs) => handleSentenceClick(cogs, d.id)}
+            selectedECs={selectedSentence ? new Set(selectedSentence.ecs) : null}
+            onSentenceClick={(ecs) => handleSentenceClick(ecs, d.id)}
             width={width}
           />
         ))}
       </div>
 
-      {selectedSentence && selectedSentence.cogs.length > 0 && (
+      {selectedSentence && selectedSentence.ecs.length > 0 && (
         <div ref={evidencePanelRef} className="space-y-4 rounded-xl border-2 border-emerald-500/30 bg-gray-800/80 p-4">
           <div className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
             <ChevronDown className="w-4 h-4 rotate-[-90deg]" />
-            Supporting evidence for sentence: {selectedSentence.cogs.join(', ')}
+            Supporting evidence for sentence: {selectedSentence.ecs.map((ec) => `EC ${ec}`).join(', ')}
           </div>
 
           {supportingMatches.length > 0 && (
@@ -135,7 +134,7 @@ export function DirectonVisualizer({
           )}
 
           <EvidenceHeatmap
-            selectedCogs={selectedSentence.cogs}
+            selectedECs={selectedSentence.ecs}
             genomeDirectons={allGenomeDirectons}
             freqMap={freqMap}
           />

@@ -26,11 +26,11 @@ export class ScoringEngine {
   }
 
   /**
-   * Hypergeometric P-Value
-   * N: Universe size (Total unique COGs)
-   * M: Size of Directon A
-   * n: Size of Directon B
-   * k: Size of intersection
+   * Hypergeometric P-Value (one-sided upper tail)
+   * N: Universe size (Total unique EC numbers across all directons)
+   * M: Size of Directon A (distinct ECs)
+   * n: Size of Directon B (distinct ECs)
+   * k: Size of intersection (shared ECs)
    */
   static calculatePValue(N: number, M: number, n: number, k: number): number {
     if (k > Math.min(M, n) || N <= 0) return 1
@@ -46,16 +46,16 @@ export class ScoringEngine {
 
 export class AdvancedScoring {
   /**
-   * Calculates the 'Significance Score' of a shared set of COGs.
-   * Rare genes push the score higher (lower p-value).
+   * Calculates the 'Significance Score' of a shared set of ECs.
+   * Rare EC numbers push the score higher (lower p-value).
    */
   static calculateWeightedScore(
-    sharedCogs: string[],
+    sharedECs: string[],
     freqMap: Map<string, number>
   ): number {
     let totalIC = 0
-    for (const cog of sharedCogs) {
-      const frequency = freqMap.get(cog) ?? 0.0001
+    for (const ec of sharedECs) {
+      const frequency = freqMap.get(ec) ?? 0.0001
       totalIC += -Math.log2(frequency)
     }
     return totalIC

@@ -16,13 +16,13 @@ export class DirectonAnalyzer {
   private directons: Directon[]
 
   constructor(genomes: Genome[]) {
-    const allCogs = new Set<string>()
+    const allECs = new Set<string>()
     for (const g of genomes) {
       for (const d of g.directons) {
-        for (const cog of d.genes) allCogs.add(cog)
+        for (const ec of d.genes) allECs.add(ec)
       }
     }
-    this.universeSize = allCogs.size
+    this.universeSize = allECs.size
     this.directons = genomes.flatMap((g) => g.directons)
   }
 
@@ -51,7 +51,7 @@ export class DirectonAnalyzer {
               sourceId: d1.id,
               targetId: d2.id,
               overlapCount: intersection.length,
-              sharedCogs: intersection,
+              sharedECs: intersection,
               pValue: pVal,
               score: pVal,
             })

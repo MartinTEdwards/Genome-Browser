@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
                     { geneName: { contains: search } },
                     { proteinAccession: { contains: search } },
                     { goTerms: { contains: search } },
+                    { ecNumber: { contains: search } },
                 ],
             }
             : {}),

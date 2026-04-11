@@ -126,11 +126,11 @@ export function DirectonAnalysisTab({
   return (
     <section className="bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-6">
       <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest">
-        Directon Analysis
+        Directon Analysis (EC-centric)
       </h2>
       <p className="text-sm text-gray-500">
         Load all genomes from the Browser tab, then run pairwise directon comparison to detect
-        multi-operon directons (functional sentences).
+        metabolic islands — conserved EC number overlaps (functional sentences).
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3">

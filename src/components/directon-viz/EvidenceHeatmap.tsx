@@ -1,7 +1,7 @@
 'use client'
 
 interface EvidenceHeatmapProps {
-  selectedCogs: string[]
+  selectedECs: string[]
   genomeDirectons: Array<{
     genomeAccession: string
     organism: string
@@ -12,16 +12,14 @@ interface EvidenceHeatmapProps {
 }
 
 export function EvidenceHeatmap({
-  selectedCogs,
+  selectedECs,
   genomeDirectons,
   freqMap,
 }: EvidenceHeatmapProps) {
-  if (selectedCogs.length === 0) return null
-
-  const cogSet = new Set(selectedCogs)
+  if (selectedECs.length === 0) return null
 
   const rows = genomeDirectons.filter((gd) => {
-    const matchCount = selectedCogs.filter((c) => gd.genes.has(c)).length
+    const matchCount = selectedECs.filter((c) => gd.genes.has(c)).length
     return matchCount >= 2
   })
 
@@ -37,17 +35,16 @@ export function EvidenceHeatmap({
               <th className="text-left py-2 pr-4 text-gray-500 font-medium sticky left-0 bg-gray-800/90">
                 Assembly / directon
               </th>
-              {selectedCogs.map((cog) => {
-                const freq = freqMap.get(cog) ?? 0.0001
+              {selectedECs.map((ec) => {
+                const freq = freqMap.get(ec) ?? 0.0001
                 const ic = -Math.log2(freq)
-                const opacity = Math.min(1, ic / 10)
                 return (
                   <th
-                    key={cog}
+                    key={ec}
                     className="px-2 py-2 text-center text-gray-400 font-mono"
                     title={`IC: ${ic.toFixed(2)}`}
                   >
-                    {cog}
+                    {ec}
                   </th>
                 )
               })}
@@ -64,19 +61,19 @@ export function EvidenceHeatmap({
                   <span className="text-gray-600"> · </span>
                   <span className="text-gray-500">{row.directonLabel}</span>
                 </td>
-                {selectedCogs.map((cog) => {
-                  const has = row.genes.has(cog)
-                  const freq = freqMap.get(cog) ?? 0.0001
+                {selectedECs.map((ec) => {
+                  const has = row.genes.has(ec)
+                  const freq = freqMap.get(ec) ?? 0.0001
                   const ic = -Math.log2(freq)
                   const opacity = Math.min(1, 0.3 + (ic / 12) * 0.7)
 
                   return (
-                    <td key={cog} className="px-2 py-1.5 text-center">
+                    <td key={ec} className="px-2 py-1.5 text-center">
                       {has ? (
                         <span
                           className="inline-block w-4 h-4 rounded-sm bg-emerald-500"
                           style={{ opacity: Math.max(0.5, opacity) }}
-                          title={`${cog} (IC ${ic.toFixed(2)})`}
+                          title={`EC ${ec} (IC ${ic.toFixed(2)})`}
                         />
                       ) : (
                         <span className="inline-block w-4 h-4 rounded-sm bg-gray-700/50" />

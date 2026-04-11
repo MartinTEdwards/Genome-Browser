@@ -3,6 +3,8 @@ import type { ComparisonResult, Directon } from './types'
 export class DirectonDeconvoluter {
   /**
    * Partitions a directon based on functional linkage from other genomes.
+   * Uses shared EC numbers from significant matches to build an adjacency
+   * graph, then finds connected components via BFS.
    */
   static splitIntoSentences(
     target: Directon,
@@ -15,7 +17,7 @@ export class DirectonDeconvoluter {
     genesInTarget.forEach((g) => adjMatrix.set(g, new Set()))
 
     for (const match of matches) {
-      const shared = match.sharedCogs
+      const shared = match.sharedECs
       for (let i = 0; i < shared.length; i++) {
         for (let j = i + 1; j < shared.length; j++) {
           if (genesInTarget.includes(shared[i]) && genesInTarget.includes(shared[j])) {

@@ -16,8 +16,8 @@ model Genome {
 }
 
 model GeneAnnotation {
-  id               Int    @id @default(autoincrement())
-  genomeId         Int
+  id                 Int      @id @default(autoincrement())
+  genomeId           Int
   proteinAccession   String
   geneName           String
   sequenceAccession  String   @default("")
@@ -25,12 +25,23 @@ model GeneAnnotation {
   strand             String
   startCoord         Int
   stopCoord          Int
-  intergenicDistance Int?
+  intergenicDistance  Int?
   directonId         Int      @default(1)
   boundaryType       String?
   cogId              String?
   cogCategory        String?
   goTerms            String   @default("")
+  ecNumber           String?
 
   genome Genome @relation(fields: [genomeId], references: [id])
+}
+
+model MetaCycMapping {
+  id         Int     @id @default(autoincrement())
+  goId       String  @unique
+  metaCycId  String
+  ecNumber   String?
+  goLabel    String  @default("")
+
+  @@index([ecNumber])
 }

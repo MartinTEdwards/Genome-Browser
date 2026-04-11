@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { buildGoToEcMap, resolveGoToEC } from '@/lib/metacyc-ingest'
 
 const NCBI_BASE = 'https://api.ncbi.nlm.nih.gov/datasets/v2alpha'
-const COG_API = 'https://www.ncbi.nlm.nih.gov/research/cog/api/cog'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -33,6 +33,7 @@ interface AnnotatedGene extends RawGene {
     cogId: string | null
     cogCategory: string | null
     goTerms: string
+    ecNumber: string | null
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -52,57 +53,6 @@ async function fetchMoleculeTypeMap(accession: string): Promise<Record<string, s
         }
     } catch { /* best-effort */ }
     return map
-}
-
-/**
- * Fetch all COG annotations for an assembly from the NCBI COG API.
- * Returns a map of protein accession → { cogId, cogCategory (letter) }.
- * When a protein has multiple COG hits, we keep the one with the highest bitscore.
- */
-async function fetchCogMap(
-    accession: string
-): Promise<Record<string, { cogId: string; cogCategory: string }>> {
-    const map: Record<string, { cogId: string; bitscore: number; cogCategory: string }> = {}
-    let url: string | null =
-        `${COG_API}/?assembly=${accession}&format=json&limit=1000`
-
-    while (url) {
-        try {
-            const res = await fetch(url, { headers: { Accept: 'application/json' } })
-            if (!res.ok) break
-            const data = (await res.json()) as {
-                results?: Array<{
-                    protein?: { name?: string }
-                    cog?: { cogid?: string; funcats?: Array<{ name?: string }> }
-                    bitscore?: number
-                }>
-                next?: string
-            }
-            for (const hit of data.results ?? []) {
-                const protein: string = hit.protein?.name ?? ''
-                const cogId: string = hit.cog?.cogid ?? ''
-                const bitscore: number = hit.bitscore ?? 0
-                const funccat: string = hit.cog?.funcats?.[0]?.name ?? ''
-                if (!protein || !cogId) continue
-                const existing = map[protein]
-                if (!existing || bitscore > existing.bitscore) {
-                    map[protein] = { cogId, bitscore, cogCategory: funccat }
-                }
-            }
-            // Follow pagination using the "next" URL; but strip the internal hostname
-            // that NCBI occasionally puts in the next field and replace with the public one.
-            if (data.next) {
-                const nextPath: string = data.next.replace(/^https?:\/\/[^/]+/, '')
-                url = `https://www.ncbi.nlm.nih.gov${nextPath}`
-            } else {
-                url = null
-            }
-        } catch { break }
-    }
-
-    return Object.fromEntries(
-        Object.entries(map).map(([k, v]) => [k, { cogId: v.cogId, cogCategory: v.cogCategory }])
-    )
 }
 
 /** Collect unique GO IDs from NCBI gene_ontology / geneOntology blocks. */
@@ -195,25 +145,34 @@ async function fetchGoMap(proteinAccessions: string[]): Promise<Record<string, s
     )
 }
 
-function attachGoTerms(
-    genes: Omit<AnnotatedGene, 'goTerms'>[],
-    goMap: Record<string, string[]>
+/**
+ * Attach GO terms and resolve EC numbers from the MetaCycMapping lookup table.
+ */
+function attachGoAndEc(
+    genes: Omit<AnnotatedGene, 'goTerms' | 'ecNumber'>[],
+    goMap: Record<string, string[]>,
+    goToEcMap: Map<string, string>
 ): AnnotatedGene[] {
-    return genes.map((g) => ({
-        ...g,
-        goTerms: JSON.stringify(goMap[g.proteinAccession] ?? []),
-    }))
+    return genes.map((g) => {
+        const goIds = goMap[g.proteinAccession] ?? []
+        return {
+            ...g,
+            goTerms: JSON.stringify(goIds),
+            ecNumber: resolveGoToEC(goIds, goToEcMap),
+        }
+    })
 }
 
 /**
  * Single-pass annotation: assign directon IDs, boundary types, and intergenic
  * distances. Sorted by startCoord within each molecule type.
  * Convergent = +→−  |  Divergent = −→+
+ *
+ * Phase 2: COG fields are set to null; EC resolution happens after this step.
  */
 function annotateGenes(
-    genes: RawGene[],
-    cogMap: Record<string, { cogId: string; cogCategory: string }>
-): Omit<AnnotatedGene, 'goTerms'>[] {
+    genes: RawGene[]
+): Omit<AnnotatedGene, 'goTerms' | 'ecNumber'>[] {
     const byMolecule: Record<string, RawGene[]> = {}
     for (const g of genes) {
         if (!byMolecule[g.moleculeType]) byMolecule[g.moleculeType] = []
@@ -221,7 +180,7 @@ function annotateGenes(
     }
 
     const molOrder = (m: string) => (m === 'Chromosome' ? 0 : m === 'Plasmid' ? 1 : 2)
-    const result: Omit<AnnotatedGene, 'goTerms'>[] = []
+    const result: Omit<AnnotatedGene, 'goTerms' | 'ecNumber'>[] = []
 
     for (const mol of Object.keys(byMolecule).sort((a, b) => molOrder(a) - molOrder(b))) {
         const sorted = byMolecule[mol].slice().sort((a, b) => a.startCoord - b.startCoord)
@@ -240,14 +199,13 @@ function annotateGenes(
                 intergenicDistance = gene.startCoord - prevStopCoord
             }
 
-            const cog = cogMap[gene.proteinAccession]
             result.push({
                 ...gene,
                 directonId,
                 boundaryType,
                 intergenicDistance,
-                cogId: cog?.cogId ?? null,
-                cogCategory: cog?.cogCategory ?? null,
+                cogId: null,
+                cogCategory: null,
             })
 
             prevStrand = gene.strand
@@ -264,10 +222,10 @@ export async function POST(req: NextRequest) {
         const { accession, organismName } = await req.json()
         if (!accession) return NextResponse.json({ error: 'accession required' }, { status: 400 })
 
-        // Fetch molecule types and COG map in parallel
-        const [moleculeTypeMap, cogMap] = await Promise.all([
+        // Fetch molecule types in parallel with building the EC lookup map
+        const [moleculeTypeMap, goToEcMap] = await Promise.all([
             fetchMoleculeTypeMap(accession),
-            fetchCogMap(accession),
+            buildGoToEcMap(),
         ])
 
         const rawGenes: RawGene[] = []
@@ -308,8 +266,10 @@ export async function POST(req: NextRequest) {
             pageToken = data.next_page_token
         } while (pageToken && pageNum < 50)
 
+        // Fetch GO terms, then annotate with directon info and resolve EC numbers
         const goMap = await fetchGoMap(rawGenes.map((g) => g.proteinAccession))
-        const genes = attachGoTerms(annotateGenes(rawGenes, cogMap), goMap)
+        const annotated = annotateGenes(rawGenes)
+        const genes = attachGoAndEc(annotated, goMap, goToEcMap)
 
         const genome = await prisma.genome.upsert({
             where: { accession },

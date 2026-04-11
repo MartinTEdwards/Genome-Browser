@@ -4,16 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { Search, Database, ChevronLeft, ChevronRight, Dna, Loader2, RefreshCw } from 'lucide-react'
 import { DirectonAnalysisTab } from '@/components/DirectonAnalysisTab'
 
-const COG_CATEGORIES: Record<string, string> = {
-  J: 'Translation', A: 'RNA processing', K: 'Transcription', L: 'Replication/repair',
-  D: 'Cell division', V: 'Defense', T: 'Signal transduction', M: 'Cell wall/membrane',
-  N: 'Cell motility', U: 'Trafficking/secretion', O: 'Post-translational mod.',
-  X: 'Mobilome', C: 'Energy production', G: 'Carbohydrate metabolism',
-  E: 'Amino acid metabolism', F: 'Nucleotide metabolism', H: 'Coenzyme metabolism',
-  I: 'Lipid metabolism', P: 'Inorganic ion transport', Q: 'Secondary metabolites',
-  R: 'General function', S: 'Unknown function',
-}
-
 interface GenomeOption {
   accession: string
   organismName: string
@@ -37,6 +27,7 @@ interface Annotation {
   cogId: string | null
   cogCategory: string | null
   goTerms: string
+  ecNumber: string | null
 }
 
 function formatGoCell(goTermsJson: string): { label: string; title: string } {
@@ -76,6 +67,7 @@ export default function HomePage() {
   const [error, setError] = useState('')
   const [loadedAccessions, setLoadedAccessions] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<'browser' | 'directon-analysis'>('browser')
+  const [metaCycLoaded, setMetaCycLoaded] = useState(false)
 
   // Fetch genome list
   useEffect(() => {
@@ -85,6 +77,26 @@ export default function HomePage() {
       .then((d) => setGenomes(d.genomes ?? []))
       .catch(() => setError('Failed to load genome list from NCBI.'))
       .finally(() => setLoadingGenomes(false))
+  }, [])
+
+  // Check and auto-load MetaCyc mappings
+  useEffect(() => {
+    fetch('/api/metacyc/ingest')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.loaded) {
+          setMetaCycLoaded(true)
+        } else {
+          // Auto-ingest if not yet loaded
+          fetch('/api/metacyc/ingest', { method: 'POST' })
+            .then((r) => r.json())
+            .then((d) => {
+              if (d.success) setMetaCycLoaded(true)
+            })
+            .catch(() => console.warn('MetaCyc auto-ingest failed'))
+        }
+      })
+      .catch(() => console.warn('MetaCyc status check failed'))
   }, [])
 
   // Fetch list of loaded accessions (genomes already in DB)
@@ -175,8 +187,13 @@ export default function HomePage() {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">Genome Explorer</h1>
-            <p className="text-xs text-gray-400">Prokaryotic genome annotation browser</p>
+            <p className="text-xs text-gray-400">Prokaryotic genome annotation browser — Phase 2 (EC-centric)</p>
           </div>
+          {metaCycLoaded && (
+            <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30 font-semibold">
+              MetaCyc2GO loaded
+            </span>
+          )}
         </div>
       </header>
 
@@ -291,7 +308,7 @@ export default function HomePage() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <input
                     type="text"
-                    placeholder="Search by gene name or protein accession…"
+                    placeholder="Search by gene name, protein accession, GO term, or EC number…"
                     value={search}
                     onChange={(e) => { setSearch(e.target.value); setPage(1) }}
                     className="w-full bg-gray-800 border border-gray-700 text-gray-100 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -308,7 +325,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Table - no overflow so all columns visible for Cypress; table-fixed keeps it within container */}
+            {/* Table */}
             <div>
               <table className="w-full text-sm table-fixed">
                 <thead className="bg-gray-800/60 text-gray-400 uppercase text-xs tracking-wider">
@@ -319,7 +336,7 @@ export default function HomePage() {
                     <th className="px-6 py-3 text-left">Gene Name</th>
                     <th className="px-6 py-3 text-center">Strand</th>
                     <th className="px-6 py-3 text-center">Directon</th>
-                    <th className="px-6 py-3 text-left">COG</th>
+                    <th className="px-6 py-3 text-left">EC Number</th>
                     <th className="px-6 py-3 text-left">GO</th>
                     <th className="px-6 py-3 text-right">Start</th>
                     <th className="px-6 py-3 text-right">Stop</th>
@@ -372,16 +389,10 @@ export default function HomePage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          {a.cogId ? (
-                            <div className="flex flex-col gap-0.5">
-                              <span className="font-mono text-xs text-gray-200">{a.cogId}</span>
-                              {a.cogCategory && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-yellow-400">
-                                  <span className="w-4 h-4 rounded bg-yellow-500/20 inline-flex items-center justify-center">{a.cogCategory}</span>
-                                  <span className="text-gray-500">{COG_CATEGORIES[a.cogCategory] ?? ''}</span>
-                                </span>
-                              )}
-                            </div>
+                          {a.ecNumber ? (
+                            <span className="font-mono text-xs text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                              EC {a.ecNumber}
+                            </span>
                           ) : (
                             <span className="text-gray-700 text-xs">—</span>
                           )}
