@@ -5,22 +5,19 @@ import { Database, Loader2, BarChart3 } from 'lucide-react'
 import { DirectonAnalyzer, type Genome, type Directon, type AnalysisResult } from '@/lib/directon-analysis'
 import { DirectonVisualizer, type DirectonWithPartitions, type GenomeDirecton } from '@/components/directon-viz'
 
-interface GenomeOption {
+export interface LoadedGenomeForAnalysis {
   accession: string
   organismName: string
-  strain: string
-  assemblyName: string
-  totalGenes: number | string
 }
 
 interface DirectonAnalysisTabProps {
-  genomes: GenomeOption[]
+  loadedGenomes: LoadedGenomeForAnalysis[]
   loadedAccessions: Set<string>
   onCorpusLoaded: (accession: string) => void
 }
 
 export function DirectonAnalysisTab({
-  genomes,
+  loadedGenomes,
   loadedAccessions,
   onCorpusLoaded,
 }: DirectonAnalysisTabProps) {
@@ -33,22 +30,22 @@ export function DirectonAnalysisTab({
   const [genomeList, setGenomeList] = useState<Genome[] | null>(null)
 
   const handleLoadCorpus = async () => {
-    if (genomes.length === 0) return
+    if (loadedGenomes.length === 0) return
     setLoadingCorpus(true)
     setAnalysisError('')
     setResults(null)
     setSummary(null)
-    const total = genomes.length
+    const total = loadedGenomes.length
     setCorpusProgress({ current: 0, total })
     let loaded = 0
-    for (const g of genomes) {
+    for (const g of loadedGenomes) {
       try {
         const res = await fetch('/api/genomes/load', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             accession: g.accession,
-            organismName: g.organismName + (g.strain ? ` (${g.strain})` : ''),
+            organismName: g.organismName,
           }),
         })
         if (!res.ok) {
@@ -129,14 +126,14 @@ export function DirectonAnalysisTab({
         Directon Analysis (EC-centric)
       </h2>
       <p className="text-sm text-gray-500">
-        Load all genomes from the Browser tab, then run pairwise directon comparison to detect
-        metabolic islands — conserved EC number overlaps (functional sentences).
+        Refresh all downloaded genomes from Genome Management, then run pairwise directon comparison
+        to detect metabolic islands — conserved EC number overlaps (functional sentences).
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <button
           onClick={handleLoadCorpus}
-          disabled={genomes.length === 0 || loadingCorpus}
+          disabled={loadedGenomes.length === 0 || loadingCorpus}
           className="flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors text-sm font-semibold"
         >
           {loadingCorpus ? (
