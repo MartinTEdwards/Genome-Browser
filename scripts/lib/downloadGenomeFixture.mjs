@@ -18,8 +18,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = path.resolve(__dirname, '../..')
 
 const DEFAULT_ACCESSION = 'GCF_000195955.2'
-const DEFAULT_ORGANISM =
-  'Bacillus subtilis subsp. subtilis str. 168'
+const DEFAULT_ORGANISM = 'Mycobacterium tuberculosis H37Rv'
 
 function loadDatabaseUrl() {
   const envPath = path.join(REPO_ROOT, '.env')

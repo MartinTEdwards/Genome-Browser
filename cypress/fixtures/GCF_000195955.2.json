@@ -1,6 +1,6 @@
 {
   "accession": "GCF_000195955.2",
-  "organism": "Bacillus subtilis subsp. subtilis str. 168",
+  "organism": "Mycobacterium tuberculosis H37Rv",
   "totalGenes": 4008,
   "sampleSize": 100,
   "genes": [
@@ -1606,7 +1606,7 @@
     }
   ],
   "annotationsPage1": {
-    "organism": "Bacillus subtilis subsp. subtilis str. 168",
+    "organism": "Mycobacterium tuberculosis H37Rv",
     "totalGenes": 4008,
     "total": 100,
     "page": 1,
@@ -3316,7 +3316,7 @@
   },
   "loadedListEntry": {
     "accession": "GCF_000195955.2",
-    "organism": "Bacillus subtilis subsp. subtilis str. 168",
+    "organism": "Mycobacterium tuberculosis H37Rv",
     "totalGenes": 4008
   },
   "loadResponse": {

@@ -2,7 +2,7 @@
 
 Genome Explorer can run end-to-end tests **without calling NCBI** by loading pre-parsed genome data from JSON files in this folder. The data is produced once from the real app load pipeline, then replayed in Cypress via `cy.intercept`.
 
-Default fixture: **`GCF_000195955.2.json`** — *Bacillus subtilis* str. 168, 100 sample genes (of ~4000 total in a full load).
+Default fixture: **`GCF_000195955.2.json`** — *Mycobacterium tuberculosis* str. H37Rv, 100 sample genes (of ~4000 total in a full load).
 
 ---
 
@@ -39,7 +39,7 @@ Pass arguments after `--` so npm forwards them to the script:
 ```bash
 npm run fixture:genome -- --help
 npm run fixture:genome -- --accession GCF_000195955.2 --sample-size 100
-npm run fixture:genome -- --organism "Bacillus subtilis subsp. subtilis str. 168"
+npm run fixture:genome -- --organism "Mycobacterium tuberculosis H37Rv"
 npm run fixture:genome -- --out-dir cypress/fixtures
 npm run fixture:genome -- --base-url http://localhost:3000
 ```
@@ -47,7 +47,7 @@ npm run fixture:genome -- --base-url http://localhost:3000
 | Option | Default | Description |
 |--------|---------|-------------|
 | `--accession` | `GCF_000195955.2` | NCBI assembly accession to load |
-| `--organism` | *B. subtilis* 168 label | Passed to `POST /api/genomes/load` as `organismName` |
+| `--organism` | *M. tuberculosis* H37Rv label | Passed to `POST /api/genomes/load` as `organismName` |
 | `--sample-size` | `100` | Number of genes exported into the fixture (first rows by molecule + start coord) |
 | `--out-dir` | `cypress/fixtures` | Output directory (filename = `<accession>.json`) |
 | `--base-url` | `http://localhost:3000` | App URL for the load API |
@@ -70,7 +70,7 @@ import { downloadGenomeFixture } from './scripts/lib/downloadGenomeFixture.mjs'
 
 const { outPath, totalGenes, sampleSize } = await downloadGenomeFixture({
   accession: 'GCF_000195955.2',
-  organismName: 'Bacillus subtilis subsp. subtilis str. 168',
+  organismName: 'Mycobacterium tuberculosis H37Rv',
   sampleSize: 100,
 })
 console.log(outPath, totalGenes, sampleSize)
