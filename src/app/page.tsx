@@ -102,7 +102,7 @@ export default function HomePage() {
             <button
               onClick={() => setActiveTab('genome-summary')}
               className={tabClass('genome-summary')}
-              data-cy="browser-tab-label"
+              data-cy="genome-summary-tab-label"
             >
               Genome Summary
             </button>
