@@ -117,6 +117,13 @@ export async function downloadGenomeFixture(options = {}) {
         organism: genome.organism,
         totalGenes: genome.totalGenes,
       },
+      catalogEntry: {
+        accession: genome.accession,
+        organismName: genome.organism,
+        strain: '',
+        assemblyName: '',
+        totalGenes: genome.totalGenes,
+      },
       loadResponse: JSON.parse(loadBody),
     }
 

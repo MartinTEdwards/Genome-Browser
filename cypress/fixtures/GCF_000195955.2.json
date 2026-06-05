@@ -3319,6 +3319,13 @@
     "organism": "Mycobacterium tuberculosis H37Rv",
     "totalGenes": 4008
   },
+  "catalogEntry": {
+    "accession": "GCF_000195955.2",
+    "organismName": "Mycobacterium tuberculosis H37Rv",
+    "strain": "",
+    "assemblyName": "",
+    "totalGenes": 4008
+  },
   "loadResponse": {
     "success": true,
     "genomeId": 41,

@@ -101,6 +101,7 @@ Each `<accession>.json` file contains:
 | `genes` | Gene rows (no `genomeId`; for custom stubs) |
 | `annotationsPage1` | Body for `GET /api/annotations?...` (page 1, no search) |
 | `loadedListEntry` | One row for `GET /api/genomes/loaded` |
+| `catalogEntry` | One row for `GET /api/genomes?*` (NCBI catalog shape: `organismName`, etc.) |
 | `loadResponse` | Optional body for `POST /api/genomes/load` |
 
 `annotationsPage1.annotations` uses synthetic `id` values `1..N` for stable table keys in tests.
@@ -117,11 +118,15 @@ Registers intercepts so the app does not call NCBI during the test:
 
 | Request | Stubbed response |
 |---------|------------------|
+| `GET **/api/genomes?*` | Single `catalogEntry` (available catalog); page 2+ returns empty |
 | `GET **/api/genomes/loaded*` | Single genome in `loadedAccessions` / `genomes` |
 | `GET **/api/annotations*accession=<accession>*` | `annotationsPage1` from the fixture |
 | `POST **/api/genomes/load` | `loadResponse` or `{ success: true, totalGenes }` |
+| `DELETE **/api/genomes` | `{ deleted: [accession], failed: [] }`; subsequent `GET loaded` returns empty |
 
-Aliases: `@loadedGenomes`, `@annotations`, `@loadGenome`.
+Aliases: `@catalogGenomes`, `@loadedGenomes`, `@annotations`, `@loadGenome`, `@deleteGenomes`.
+
+Without the `DELETE` stub, the UI shows the genome (from the fixture intercept) but the real API returns `Not found` if that accession is not in SQLite.
 
 ### Example: Genome Summary (offline)
 

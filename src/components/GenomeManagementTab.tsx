@@ -376,6 +376,7 @@ export function GenomeManagementTab({
             <div className="flex gap-2">
               <button
                 onClick={handleSelectAllDelete}
+                data-cy="select-all-delete-button"
                 disabled={downloadedGenomes.length === 0 || deleting}
                 className="px-3 py-2 rounded-xl border border-gray-700 text-gray-400 hover:text-gray-100 text-xs font-medium disabled:opacity-50"
               >
@@ -383,6 +384,7 @@ export function GenomeManagementTab({
               </button>
               <button
                 onClick={handleDelete}
+                data-cy="delete-genomes-button"
                 disabled={selectedDelete.size === 0 || deleting}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-900/80 hover:bg-red-800 disabled:bg-gray-700 disabled:cursor-not-allowed text-sm font-semibold"
               >

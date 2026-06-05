@@ -96,6 +96,7 @@ export default function HomePage() {
             <button
               onClick={() => setActiveTab('genome-management')}
               className={tabClass('genome-management')}
+              data-cy="genome-management-tab"
             >
               Genome Management
             </button>
