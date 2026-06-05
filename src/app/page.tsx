@@ -28,8 +28,10 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    refreshLoadedGenomes()
-  }, [refreshLoadedGenomes])
+    if (activeTab === 'genome-summary' || activeTab === 'directon-analysis') {
+      refreshLoadedGenomes()
+    }
+  }, [activeTab, refreshLoadedGenomes])
 
   useEffect(() => {
     fetch('/api/metacyc/ingest')

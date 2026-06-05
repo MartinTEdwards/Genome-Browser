@@ -5,7 +5,9 @@ describe('Genome offline fixture', () => {
   })
 
   it('shows annotations for the fixture genome on Genome Summary', () => {
+    cy.seedDownloadedGenome('GCF_000195955.2')
     cy.contains('Genome Summary').click()
+    cy.wait('@loadedGenomes')
     cy.get('select').select('GCF_000195955.2')
     cy.wait('@annotations')
     cy.contains('dnaA').should('be.visible')
@@ -25,6 +27,14 @@ describe('Genome offline fixture', () => {
 
   it('deletes the fixture genome from the downloaded list on Genome Management', () => {
     cy.get('[data-cy="genome-management-tab"]').click()
+    cy.wait('@catalogGenomes')
+    cy.contains('Available prokaryotic genomes')
+      .parent()
+      .find('input[type="checkbox"]')
+      .first()
+      .check()
+    cy.contains('button', 'Download').click()
+    cy.wait('@loadGenome')
     cy.wait('@loadedGenomes')
     cy.contains('GCF_000195955.2').should('be.visible')
     cy.get('[data-cy="select-all-delete-button"]').click()

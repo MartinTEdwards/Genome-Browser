@@ -103,10 +103,6 @@ export function GenomeManagementTab({
   // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch only when catalog page index changes
   }, [catalogPage])
 
-  useEffect(() => {
-    fetchDownloaded(downloadedPage)
-  }, [downloadedPage, fetchDownloaded])
-
   const toggleDownload = (accession: string) => {
     setSelectedDownload((prev) => {
       const next = new Set(prev)
@@ -250,11 +246,12 @@ export function GenomeManagementTab({
               <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
             </div>
           ) : (
-            <ul className="space-y-1 max-h-[420px] overflow-y-auto">
+            <ul data-cy="genome-cataloglist" className="space-y-1 max-h-[420px] overflow-y-auto">
               {catalogGenomes.map((g) => {
                 const isLoaded = loadedAccessions.has(g.accession)
                 return (
                   <li
+                    data-cy="genome-catalog-item"
                     key={g.accession}
                     className={`flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-gray-800/50 ${isLoaded ? 'opacity-60' : ''}`}
                   >
@@ -356,7 +353,11 @@ export function GenomeManagementTab({
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-800">
             <div className="flex gap-2 items-center">
               <button
-                onClick={() => setDownloadedPage((p) => Math.max(1, p - 1))}
+                onClick={() => {
+                  const p = Math.max(1, downloadedPage - 1)
+                  setDownloadedPage(p)
+                  fetchDownloaded(p)
+                }}
                 disabled={downloadedPage <= 1 || downloadedLoading}
                 className="p-2 rounded-lg border border-gray-700 hover:border-gray-500 disabled:opacity-30 disabled:cursor-not-allowed"
               >
@@ -366,7 +367,11 @@ export function GenomeManagementTab({
                 Page {downloadedPage} of {downloadedTotalPages}
               </span>
               <button
-                onClick={() => setDownloadedPage((p) => Math.min(downloadedTotalPages, p + 1))}
+                onClick={() => {
+                  const p = Math.min(downloadedTotalPages, downloadedPage + 1)
+                  setDownloadedPage(p)
+                  fetchDownloaded(p)
+                }}
                 disabled={downloadedPage >= downloadedTotalPages || downloadedLoading}
                 className="p-2 rounded-lg border border-gray-700 hover:border-gray-500 disabled:opacity-30 disabled:cursor-not-allowed"
               >

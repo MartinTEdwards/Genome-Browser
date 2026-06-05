@@ -4,6 +4,13 @@ Genome Explorer can run end-to-end tests **without calling NCBI** by loading pre
 
 Default fixture: **`GCF_000195955.2.json`** — *Mycobacterium tuberculosis* str. H37Rv, 100 sample genes (of ~4000 total in a full load).
 
+Additional committed fixtures (100 genes each):
+
+| File | Organism |
+|------|----------|
+| `GCF_000005845.2.json` | *Escherichia coli* str. K-12 substr. MG1655 |
+| `GCF_000009045.1.json` | *Bacillus subtilis* subsp. subtilis str. 168 |
+
 ---
 
 ## Command line: generating a fixture
@@ -40,6 +47,8 @@ Pass arguments after `--` so npm forwards them to the script:
 npm run fixture:genome -- --help
 npm run fixture:genome -- --accession GCF_000195955.2 --sample-size 100
 npm run fixture:genome -- --organism "Mycobacterium tuberculosis H37Rv"
+npm run fixture:genome -- --accession GCF_000005845.2 --organism "Escherichia coli str. K-12 substr. MG1655" --sample-size 100
+npm run fixture:genome -- --accession GCF_000009045.1 --organism "Bacillus subtilis subsp. subtilis str. 168" --sample-size 100
 npm run fixture:genome -- --out-dir cypress/fixtures
 npm run fixture:genome -- --base-url http://localhost:3000
 ```
@@ -114,19 +123,55 @@ Support code lives in [`cypress/support/genome-fixture.ts`](../support/genome-fi
 
 ### `cy.stubGenomeFromFixture(accession)`
 
-Registers intercepts so the app does not call NCBI during the test:
+Sugar for a **single** fixture: `stubGenomesFromFixtures([accession])`. The catalog shows one row.
+
+### `cy.stubGenomesFromFixtures(accessions[])`
+
+Registers intercepts for a **short multi-genome list** (e.g. three 100-gene fixtures for downloaded-list tests):
 
 | Request | Stubbed response |
 |---------|------------------|
-| `GET **/api/genomes?*` | Single `catalogEntry` (available catalog); page 2+ returns empty |
-| `GET **/api/genomes/loaded*` | Single genome in `loadedAccessions` / `genomes` |
-| `GET **/api/annotations*accession=<accession>*` | `annotationsPage1` from the fixture |
-| `POST **/api/genomes/load` | `loadResponse` or `{ success: true, totalGenes }` |
-| `DELETE **/api/genomes` | `{ deleted: [accession], failed: [] }`; subsequent `GET loaded` returns empty |
+| `GET **/api/genomes?*` | All `catalogEntry` rows, sorted by accession; page 2+ returns empty |
+| `GET **/api/genomes/loaded*` | **Empty** until load/seed; then all downloaded accessions (sorted), with `?all=true` and pagination |
+| `GET **/api/annotations*accession=<accession>*` | `annotationsPage1` per accession (`@annotations` if one genome; else `@annotations_<accession>`) |
+| `POST **/api/genomes/load` | Routes by `req.body.accession`; marks that genome downloaded |
+| `DELETE **/api/genomes` | Clears each accession in `req.body.accessions`; partial delete supported |
 
-Aliases: `@catalogGenomes`, `@loadedGenomes`, `@annotations`, `@loadGenome`, `@deleteGenomes`.
+Aliases: `@catalogGenomes`, `@loadedGenomes`, `@loadGenome`, `@deleteGenomes`, plus annotation aliases above.
+
+```typescript
+const THREE = ['GCF_000005845.2', 'GCF_000009045.1', 'GCF_000195955.2']
+
+beforeEach(() => {
+  cy.stubGenomesFromFixtures(THREE)
+  cy.visit('/')
+})
+```
 
 Without the `DELETE` stub, the UI shows the genome (from the fixture intercept) but the real API returns `Not found` if that accession is not in SQLite.
+
+### Deferred loaded fetches (app + stub)
+
+On `cy.visit('/')`, the app **does not** call `GET /api/genomes/loaded`:
+
+- **Genome Management** — downloaded list stays empty until Download, pagination, or delete refresh.
+- **Genome Summary / Directon Analysis** — loaded genomes fetch when you open that tab.
+
+The stub matches this: `GET loaded` returns empty until you seed or complete a Download.
+
+### `cy.seedDownloadedGenome(accession)`
+
+Marks the fixture genome as downloaded in stub state **without** clicking Download. Use when a test needs Summary or delete behavior but should skip the catalog download UI.
+
+```typescript
+cy.stubGenomeFromFixture('GCF_000195955.2')
+cy.visit('/')
+cy.seedDownloadedGenome('GCF_000195955.2')
+cy.contains('Genome Summary').click()
+cy.wait('@loadedGenomes')
+```
+
+For Genome Management delete tests that need the right-hand downloaded list, either seed and trigger a fetch (e.g. via Download) or walk the full Download flow.
 
 ### Example: Genome Summary (offline)
 
@@ -135,10 +180,12 @@ describe('Genome Summary (offline)', () => {
   beforeEach(() => {
     cy.stubGenomeFromFixture('GCF_000195955.2')
     cy.visit('/')
-    cy.contains('Genome Summary').click()
   })
 
   it('shows annotations for the fixture genome', () => {
+    cy.seedDownloadedGenome('GCF_000195955.2')
+    cy.contains('Genome Summary').click()
+    cy.wait('@loadedGenomes')
     cy.get('select').select('GCF_000195955.2')
     cy.wait('@annotations')
     cy.contains('dnaA').should('be.visible')
