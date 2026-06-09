@@ -25,12 +25,78 @@ export interface GenomeFixture {
     pageSize: number
     annotations: unknown[]
   }
+  genes?: Array<{
+    geneName: string
+    proteinAccession: string
+    goTerms?: string
+    ecNumber?: string | null
+    // include other fields your table needs
+  }>
   loadedListEntry: {
     accession: string
     organism: string
     totalGenes: number
   }
   loadResponse?: { success: boolean; totalGenes: number }
+}
+
+interface AnnotationsStubResponse {
+  organism: string
+  totalGenes: number
+  total: number
+  page: number
+  pageSize: number
+  annotations: unknown[]
+}
+
+const ANNOTATION_PAGE_SIZE = 100  // same as real API
+
+
+function buildAnnotationsResponse(
+  fx: GenomeFixture,
+  requestUrl: string
+): AnnotationsStubResponse {
+  // --- 1. Parse query params from the intercepted URL ---
+  const url = new URL(requestUrl)
+  const search = (url.searchParams.get('search') ?? '').trim().toLowerCase()
+  const page = Math.max(1, parseInt(url.searchParams.get('page') ?? '1', 10))
+  const pageSize = ANNOTATION_PAGE_SIZE
+  // --- 2. Source rows: prefer fx.genes, else annotationsPage1 ---
+  const rawRows =
+    fx.genes ??
+    (fx.annotationsPage1.annotations as Array<Record<string, unknown>>)
+  // --- 3. Filter by search (mirror API OR fields) ---
+  const filtered = search
+    ? rawRows.filter((row) => {
+        const geneName = String(row.geneName ?? '').toLowerCase()
+        const protein = String(row.proteinAccession ?? '').toLowerCase()
+        const goTerms = String(row.goTerms ?? '').toLowerCase()
+        const ec = String(row.ecNumber ?? '').toLowerCase()
+        return (
+          geneName.includes(search) ||
+          protein.includes(search) ||
+          goTerms.includes(search) ||
+          ec.includes(search)
+        )
+      }) : rawRows
+  // --- 4. Paginate ---
+  const total = filtered.length
+  const skip = (page - 1) * pageSize
+  const slice = filtered.slice(skip, skip + pageSize)
+  // --- 5. Add synthetic `id` for table keys (like fixture export does) ---
+  const annotations = slice.map((row, i) => ({
+    id: skip + i + 1,
+    ...row,
+  }))
+  // --- 6. Return API-shaped body ---
+  return {
+    organism: fx.organism,
+    totalGenes: fx.totalGenes,
+    total,
+    page,
+    pageSize,
+    annotations,
+  }
 }
 
 function catalogEntryFromFixture(fx: GenomeFixture): CatalogEntry {
@@ -151,9 +217,12 @@ function registerAnnotationIntercepts(accessions: string[]) {
   accessions.forEach((accession) => {
     const fx = fixtureRegistry[accession]
     const alias = accessions.length === 1 ? 'annotations' : `annotations_${accession}`
-    cy.intercept('GET', `**/api/annotations*accession=${accession}*`, fx.annotationsPage1).as(
-      alias
-    )
+    cy.intercept('GET', `**/api/annotations*accession=${accession}*`, (req) => {
+      req.reply({
+        statusCode: 200,
+        body: buildAnnotationsResponse(fixtureRegistry[accession], req.url),
+      })
+    }).as(alias)
   })
 }
 

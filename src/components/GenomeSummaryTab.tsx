@@ -210,17 +210,17 @@ export function GenomeSummaryTab({
             <table className="w-full text-sm table-fixed">
               <thead className="bg-gray-800/60 text-gray-400 uppercase text-xs tracking-wider">
                 <tr>
-                  <th className="px-6 py-3 text-left">Organism</th>
-                  <th className="px-6 py-3 text-left">Source</th>
-                  <th className="px-6 py-3 text-left">Protein Accession</th>
-                  <th className="px-6 py-3 text-left">Gene Name</th>
-                  <th className="px-6 py-3 text-center">Strand</th>
-                  <th className="px-6 py-3 text-center">Directon</th>
-                  <th className="px-6 py-3 text-left">EC Number</th>
-                  <th className="px-6 py-3 text-left">GO</th>
-                  <th className="px-6 py-3 text-right">Start</th>
-                  <th className="px-6 py-3 text-right">Stop</th>
-                  <th className="px-6 py-3 text-right">Intergenic Dist.</th>
+                  <th className="px-6 py-3 text-left" data-cy="organism-column">Organism</th>
+                  <th className="px-6 py-3 text-left" data-cy ="source-column">Source</th>
+                  <th className="px-6 py-3 text-left" data-cy="protein-accession-column">Protein Accession</th>
+                  <th className="px-6 py-3 text-left" data-cy="gene-name-column">Gene Name</th>
+                  <th className="px-6 py-3 text-center" data-cy="strand-column">Strand</th>
+                  <th className="px-6 py-3 text-center" data-cy="directon-column">Directon</th>
+                  <th className="px-6 py-3 text-left" data-cy="ec-number-column">EC Number</th>
+                  <th className="px-6 py-3 text-left" data-cy="go-column">GO</th>
+                  <th className="px-6 py-3 text-right" data-cy="start-column">Start</th>
+                  <th className="px-6 py-3 text-right" data-cy="stop-column">Stop</th>
+                  <th className="px-6 py-3 text-right" data-cy="intergenic-dist-column">Intergenic Dist.</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">

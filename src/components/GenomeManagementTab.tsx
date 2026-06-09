@@ -71,6 +71,12 @@ export function GenomeManagementTab({
   }, [onLoadedChange])
 
   useEffect(() => {
+    if (loadedAccessions.size > 0 && downloadedGenomes.length === 0 && !downloadedLoading) {
+      fetchDownloaded(1)
+    }
+  }, [loadedAccessions, downloadedGenomes.length, downloadedLoading, fetchDownloaded])
+
+  useEffect(() => {
     let cancelled = false
     async function loadCatalog() {
       setCatalogLoading(true)
