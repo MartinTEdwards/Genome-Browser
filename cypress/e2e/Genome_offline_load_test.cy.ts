@@ -44,7 +44,7 @@ describe('Genome offline fixture', () => {
     cy.contains('No genomes downloaded yet.').should('be.visible')
   })
 
-  it('shows the correct number of annotations for the fixture genome', () => {
+  it('dynamically loads annotations for the fixture genome', () => {
   cy.stubGenomeFromFixture('GCF_000195955.2')
   cy.visit('/')
   cy.seedDownloadedGenome('GCF_000195955.2')

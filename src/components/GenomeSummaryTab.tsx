@@ -124,6 +124,7 @@ export function GenomeSummaryTab({
 
         <div className="relative flex-1 max-w-xl">
           <select
+            data-cy="genome-selector-pane-select"
             value={selectedAccession}
             onChange={(e) => handleSelectGenome(e.target.value)}
             disabled={loadedGenomes.length === 0}
@@ -133,7 +134,7 @@ export function GenomeSummaryTab({
               {loadedGenomes.length === 0 ? '— No downloaded genomes —' : '— Select an organism —'}
             </option>
             {loadedGenomes.map((g) => (
-              <option key={g.accession} value={g.accession}>
+              <option key={g.accession} value={g.accession} data-cy={`genome-option-${g.accession}`}>
                 {g.organism} — {g.accession}
               </option>
             ))}

@@ -244,7 +244,7 @@ export function GenomeManagementTab({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Available genomes (left) */}
         <div className="space-y-3 border border-gray-800 rounded-xl p-4">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider" data-cy="available-genomes-title">
             Available prokaryotic genomes
           </h3>
           {catalogLoading ? (

@@ -6,8 +6,7 @@ function downloadedList() {
 
 function selectAllCatalogCheckboxes() {
   cy.wait('@catalogGenomes')
-  cy.contains('Available prokaryotic genomes')
-    .parent()
+  cy.get('[data-cy="available-genomes-title"]').parent()
     .find('input[type="checkbox"]')
     .check()
 }
